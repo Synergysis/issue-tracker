@@ -1,34 +1,60 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import useAuthStore from "../auth/useAuthStore";
 
-// Auth components
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      <p className="text-gray-600 text-sm">Loading...</p>
+    </div>
+  </div>
+);
+
+// Auth components (keep these as regular imports since they're used immediately)
 import Login from "../auth/Login";
 import Register from "../auth/Register";
 import ClientPasswordReset from "../auth/ClientPasswordReset";
 import AdminLogin from "../auth/AdminLogin";
 
-// Layouts
+// Layouts (keep these as regular imports since they're structural)
 import ClientLayout from "../layout/ClientLayout";
 import SuperAdminLayout from "../layout/SuperAdminLayout";
 
-// Client pages
-import ClientDashboard from "../pages/client/Dashboard";
-import TicketCreate from "../pages/client/TicketCreate";
-import TicketView from "../pages/client/TicketView";
-import TicketDetailView from "../pages/client/TicketDetailView";
-import Profile from "../pages/client/Profile";
+// Dynamic imports for code splitting
+const ClientDashboard = React.lazy(() => import("../pages/client/Dashboard"));
+const TicketCreate = React.lazy(() => import("../pages/client/TicketCreate"));
+const TicketView = React.lazy(() => import("../pages/client/TicketView"));
+const TicketDetailView = React.lazy(() =>
+  import("../pages/client/TicketDetailView")
+);
+const Profile = React.lazy(() => import("../pages/client/Profile"));
 
-// Super Admin/Admin pages
-import SuperAdminDashboard from "../pages/superadmin/Dashboard";
-import ClientsView from "../pages/superadmin/ClientsView";
-import SuperAdminTicketsView from "../pages/superadmin/TicketsView";
-import SuperAdminTicketDetailPage from "../pages/superadmin/SuperAdminTicketDetailPage";
-import ClientDetailView from "../pages/superadmin/ClientDetailView";
-import CompaniesView from "../pages/superadmin/CompaniesView";
-import CreateCompany from "../pages/superadmin/CreateCompany";
-import CompanyDetailView from "../pages/superadmin/CompanyDetailView";
-import EditCompany from "../pages/superadmin/EditCompany";
+// Super Admin/Admin pages - lazy loaded
+const SuperAdminDashboard = React.lazy(() =>
+  import("../pages/superadmin/Dashboard")
+);
+const ClientsView = React.lazy(() => import("../pages/superadmin/ClientsView"));
+const SuperAdminTicketsView = React.lazy(() =>
+  import("../pages/superadmin/TicketsView")
+);
+const SuperAdminTicketDetailPage = React.lazy(() =>
+  import("../pages/superadmin/SuperAdminTicketDetailPage")
+);
+const ClientDetailView = React.lazy(() =>
+  import("../pages/superadmin/ClientDetailView")
+);
+const CompaniesView = React.lazy(() =>
+  import("../pages/superadmin/CompaniesView")
+);
+const CreateCompany = React.lazy(() =>
+  import("../pages/superadmin/CreateCompany")
+);
+const CompanyDetailView = React.lazy(() =>
+  import("../pages/superadmin/CompanyDetailView")
+);
+const EditCompany = React.lazy(() => import("../pages/superadmin/EditCompany"));
 
 // Protected Route
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -102,11 +128,46 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="dashboard" element={<ClientDashboard />} />
-        <Route path="create-ticket" element={<TicketCreate />} />
-        <Route path="tickets" element={<TicketView />} />
-        <Route path="tickets/:ticket_id" element={<TicketDetailView />} />
-        <Route path="profile" element={<Profile />} /> {/* Profile route */}
+        <Route
+          path="dashboard"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientDashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="create-ticket"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TicketCreate />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tickets"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TicketView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tickets/:ticket_id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TicketDetailView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Profile />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Superadmin/Admin Shared Routes */}
@@ -118,22 +179,80 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="dashboard" element={<SuperAdminDashboard />} />
-        <Route path="clients" element={<ClientsView />} />
-        <Route path="clients/:client_id" element={<ClientDetailView />} />
-        <Route path="tickets" element={<SuperAdminTicketsView />} />
+        <Route
+          path="dashboard"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SuperAdminDashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients/:client_id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientDetailView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tickets"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SuperAdminTicketsView />
+            </Suspense>
+          }
+        />
         <Route
           path="tickets/:ticket_id"
           element={
             <div className="p-6 min-h-screen bg-white">
-              <SuperAdminTicketDetailPage />
+              <Suspense fallback={<PageLoader />}>
+                <SuperAdminTicketDetailPage />
+              </Suspense>
             </div>
           }
         />
-  <Route path="companies" element={<CompaniesView />} />
-  <Route path="companies/create" element={<CreateCompany />} />
-  <Route path="companies/edit/:id" element={<EditCompany />} />
-  <Route path="companies/:id" element={<CompanyDetailView />} />
+        <Route
+          path="companies"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompaniesView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="companies/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CreateCompany />
+            </Suspense>
+          }
+        />
+        <Route
+          path="companies/edit/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EditCompany />
+            </Suspense>
+          }
+        />
+        <Route
+          path="companies/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompanyDetailView />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Redirect root to appropriate dashboard */}
