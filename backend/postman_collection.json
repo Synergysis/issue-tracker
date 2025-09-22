@@ -1,0 +1,133 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Issue Tracker API",
+    "description": "Postman collection for Issue Tracker backend (Super Admin & Client)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "Super Admin",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Register",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{baseUrl}}/superadmin/register", "host": ["{{baseUrl}}"], "path": ["superadmin", "register"] },
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" }
+              }
+            },
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{baseUrl}}/superadmin/login", "host": ["{{baseUrl}}"], "path": ["superadmin", "login"] },
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clients",
+          "item": [
+            { "name": "Search Clients", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/clients/search", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients", "search"] } } },
+            { "name": "Get All Clients", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/clients", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients"] } } },
+            { "name": "Approve Client", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/superadmin/clients/approve/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients", "approve", ":id"] } } },
+            { "name": "Reject Client", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/superadmin/clients/reject/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients", "reject", ":id"] } } },
+            { "name": "Delete Client", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/superadmin/clients/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients", ":id"] } } },
+            { "name": "Get Client By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/clients/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "clients", ":id"] } } }
+          ]
+        },
+        {
+          "name": "Tickets",
+          "item": [
+            { "name": "Search Tickets", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/tickets/search", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", "search"] } } },
+            { "name": "Get All Tickets", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/tickets", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets"] } } },
+            { "name": "Get Ticket Stats", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/tickets/stats", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", "stats"] } } },
+            { "name": "Get Ticket By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/tickets/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", ":id"] } } },
+            { "name": "Update Ticket", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/superadmin/tickets/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", ":id"] } } },
+            { "name": "Resolve Ticket", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/superadmin/tickets/:id/resolve", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", ":id", "resolve"] } } },
+            { "name": "Bulk Update Tickets", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/superadmin/tickets/bulk-update", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", "bulk-update"] } } },
+            { "name": "Delete Ticket", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/superadmin/tickets/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "tickets", ":id"] } } }
+          ]
+        },
+        {
+          "name": "Analytics",
+          "item": [
+            { "name": "Dashboard", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/analytics/dashboard", "host": ["{{baseUrl}}"], "path": ["superadmin", "analytics", "dashboard"] } } },
+            { "name": "Activity Feed", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/analytics/activity", "host": ["{{baseUrl}}"], "path": ["superadmin", "analytics", "activity"] } } },
+            { "name": "Trends", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/analytics/trends", "host": ["{{baseUrl}}"], "path": ["superadmin", "analytics", "trends"] } } },
+            { "name": "Categories", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/analytics/categories", "host": ["{{baseUrl}}"], "path": ["superadmin", "analytics", "categories"] } } },
+            { "name": "Clients Analytics", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/analytics/clients", "host": ["{{baseUrl}}"], "path": ["superadmin", "analytics", "clients"] } } }
+          ]
+        },
+        {
+          "name": "Companies",
+          "item": [
+            { "name": "Create Company", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/superadmin/companies", "host": ["{{baseUrl}}"], "path": ["superadmin", "companies"] } } },
+            { "name": "Get Companies", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/companies", "host": ["{{baseUrl}}"], "path": ["superadmin", "companies"] } } },
+            { "name": "Search Companies", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/companies/search", "host": ["{{baseUrl}}"], "path": ["superadmin", "companies", "search"] } } },
+            { "name": "Get Company By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/superadmin/companies/:id", "host": ["{{baseUrl}}"], "path": ["superadmin", "companies", ":id"] } } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Client",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            { "name": "Register", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/client/register", "host": ["{{baseUrl}}"], "path": ["client", "register"] } } },
+            { "name": "Login", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/client/login", "host": ["{{baseUrl}}"], "path": ["client", "login"] } } },
+            { "name": "Request Password Reset", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/client/request-password-reset", "host": ["{{baseUrl}}"], "path": ["client", "request-password-reset"] } } },
+            { "name": "Reset Password With OTP", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/client/reset-password", "host": ["{{baseUrl}}"], "path": ["client", "reset-password"] } } }
+          ]
+        },
+        {
+          "name": "Dashboard & Profile",
+          "item": [
+            { "name": "Get Dashboard", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/client/dashboard", "host": ["{{baseUrl}}"], "path": ["client", "dashboard"] } } },
+            { "name": "Get Profile", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/client/profile", "host": ["{{baseUrl}}"], "path": ["client", "profile"] } } },
+            { "name": "Update Profile", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/client/profile", "host": ["{{baseUrl}}"], "path": ["client", "profile"] } } }
+          ]
+        },
+        {
+          "name": "Tickets",
+          "item": [
+            { "name": "Create Ticket", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/client/tickets", "host": ["{{baseUrl}}"], "path": ["client", "tickets"] } } },
+            { "name": "Get Tickets", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/client/tickets", "host": ["{{baseUrl}}"], "path": ["client", "tickets"] } } },
+            { "name": "Get Ticket Stats", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/client/tickets/stats", "host": ["{{baseUrl}}"], "path": ["client", "tickets", "stats"] } } },
+            { "name": "Get Ticket By Id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/client/tickets/:id", "host": ["{{baseUrl}}"], "path": ["client", "tickets", ":id"] } } },
+            { "name": "Update Ticket", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/client/tickets/:id", "host": ["{{baseUrl}}"], "path": ["client", "tickets", ":id"] } } },
+            { "name": "Delete Ticket", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/client/tickets/:id", "host": ["{{baseUrl}}"], "path": ["client", "tickets", ":id"] } } },
+            { "name": "Close Ticket", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/client/tickets/:id/close", "host": ["{{baseUrl}}"], "path": ["client", "tickets", ":id", "close"] } } },
+            { "name": "Cancel Ticket", "request": { "method": "PUT", "url": { "raw": "{{baseUrl}}/client/tickets/:id/cancel", "host": ["{{baseUrl}}"], "path": ["client", "tickets", ":id", "cancel"] } } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ticket Chat",
+      "item": [
+        { "name": "Get Ticket Chat", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/tickets/:ticketId/chat", "host": ["{{baseUrl}}"], "path": ["tickets", ":ticketId", "chat"] } } },
+        { "name": "Post Ticket Chat", "request": { "method": "POST", "url": { "raw": "{{baseUrl}}/tickets/:ticketId/chat", "host": ["{{baseUrl}}"], "path": ["tickets", ":ticketId", "chat"] } } }
+      ]
+    }
+  ]
+}

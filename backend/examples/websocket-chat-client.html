@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Client Example</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background: white;
+            border-left: 3px solid #007bff;
+        }
+        .message.own {
+            border-left-color: #28a745;
+            background: #f8fff8;
+        }
+        .message-header {
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .message-content {
+            margin-bottom: 4px;
+        }
+        .message-attachments {
+            margin-top: 8px;
+        }
+        .attachment {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #495057;
+            font-size: 12px;
+        }
+        .attachment:hover {
+            background: #dee2e6;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .input-group input, .input-group textarea, .input-group button {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .input-group input[type="text"] {
+            flex: 1;
+        }
+        .input-group textarea {
+            flex: 1;
+            min-height: 60px;
+            resize: vertical;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .typing-indicator {
+            font-style: italic;
+            color: #666;
+            padding: 5px 0;
+        }
+        .file-upload {
+            margin: 10px 0;
+        }
+        #fileInput {
+            margin-bottom: 10px;
+        }
+        .selected-files {
+            margin-top: 10px;
+        }
+        .selected-file {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat Client Example</h1>
+    
+    <div class="container">
+        <h3>Connection Status</h3>
+        <div id="connectionStatus" class="status info">Disconnected</div>
+        
+        <div class="input-group">
+            <input type="text" id="tokenInput" placeholder="Enter your JWT token">
+            <button onclick="authenticate()">Connect & Authenticate</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>Ticket Management</h3>
+        <div class="input-group">
+            <input type="text" id="ticketIdInput" placeholder="Enter ticket ID">
+            <button onclick="joinTicket()">Join Ticket</button>
+            <button onclick="leaveTicket()">Leave Ticket</button>
+            <button onclick="loadMessages()">Load Messages</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>Chat Messages</h3>
+        <div id="messages" class="messages"></div>
+        <div id="typingIndicator" class="typing-indicator"></div>
+        
+        <div class="file-upload">
+            <input type="file" id="fileInput" multiple accept="*/*">
+            <div id="selectedFiles" class="selected-files"></div>
+        </div>
+        
+        <div class="input-group">
+            <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>Debug Log</h3>
+        <div id="debugLog" class="messages" style="height: 200px; font-family: monospace; font-size: 12px;"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        let socket = null;
+        let currentUser = null;
+        let currentTicketId = null;
+        let typingTimer = null;
+        let selectedFiles = [];
+
+        // Initialize socket connection
+        function initSocket() {
+            socket = io('http://localhost:5000', {
+                transports: ['websocket']
+            });
+
+            // Connection events
+            socket.on('connect', () => {
+                updateStatus('Connected to server', 'info');
+                log('Connected to WebSocket server');
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus('Disconnected from server', 'error');
+                log('Disconnected from WebSocket server');
+            });
+
+            // Authentication events
+            socket.on('authenticated', (data) => {
+                currentUser = data.user;
+                updateStatus(`Authenticated as ${data.user.name} (${data.user.type})`, 'success');
+                log('Authentication successful', data);
+            });
+
+            socket.on('authentication_error', (data) => {
+                updateStatus(`Authentication failed: ${data.message}`, 'error');
+                log('Authentication failed', data);
+            });
+
+            // Ticket events
+            socket.on('joined_ticket', (data) => {
+                currentTicketId = data.ticketId;
+                updateStatus(`Joined ticket ${data.ticketId}`, 'success');
+                log('Joined ticket', data);
+            });
+
+            socket.on('left_ticket', (data) => {
+                if (currentTicketId === data.ticketId) {
+                    currentTicketId = null;
+                }
+                updateStatus(`Left ticket ${data.ticketId}`, 'info');
+                log('Left ticket', data);
+            });
+
+            socket.on('join_ticket_error', (data) => {
+                updateStatus(`Failed to join ticket: ${data.message}`, 'error');
+                log('Join ticket error', data);
+            });
+
+            // Message events
+            socket.on('messages_loaded', (data) => {
+                displayMessages(data.messages);
+                log('Messages loaded', data);
+            });
+
+            socket.on('messages_error', (data) => {
+                updateStatus(`Failed to load messages: ${data.message}`, 'error');
+                log('Messages error', data);
+            });
+
+            socket.on('new_message', (data) => {
+                appendMessage(data.data);
+                log('New message received', data);
+            });
+
+            socket.on('send_message_error', (data) => {
+                updateStatus(`Failed to send message: ${data.message}`, 'error');
+                log('Send message error', data);
+            });
+
+            // Typing events
+            socket.on('user_typing', (data) => {
+                showTypingIndicator(`${data.userName} is typing...`);
+                log('User typing', data);
+            });
+
+            socket.on('user_stopped_typing', (data) => {
+                hideTypingIndicator();
+                log('User stopped typing', data);
+            });
+        }
+
+        // Authentication
+        function authenticate() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+
+            if (!socket || !socket.connected) {
+                initSocket();
+                socket.on('connect', () => {
+                    socket.emit('authenticate', { token });
+                });
+            } else {
+                socket.emit('authenticate', { token });
+            }
+        }
+
+        // Ticket management
+        function joinTicket() {
+            const ticketId = document.getElementById('ticketIdInput').value.trim();
+            if (!ticketId) {
+                alert('Please enter a ticket ID');
+                return;
+            }
+
+            if (!socket || !currentUser) {
+                alert('Please authenticate first');
+                return;
+            }
+
+            socket.emit('join_ticket', { ticketId });
+        }
+
+        function leaveTicket() {
+            if (!currentTicketId) {
+                alert('Not currently in any ticket');
+                return;
+            }
+
+            socket.emit('leave_ticket', { ticketId: currentTicketId });
+        }
+
+        function loadMessages() {
+            if (!currentTicketId) {
+                alert('Please join a ticket first');
+                return;
+            }
+
+            socket.emit('get_messages', { ticketId: currentTicketId });
+        }
+
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            displaySelectedFiles();
+        });
+
+        function displaySelectedFiles() {
+            const container = document.getElementById('selectedFiles');
+            container.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'selected-file';
+                fileDiv.innerHTML = `${file.name} (${formatFileSize(file.size)}) <button onclick="removeFile(${index})" style="margin-left: 5px; font-size: 10px;">×</button>`;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displaySelectedFiles();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Message sending
+        async function sendMessage() {
+            const messageText = document.getElementById('messageInput').value.trim();
+            
+            if (!messageText && selectedFiles.length === 0) {
+                alert('Please enter a message or select files');
+                return;
+            }
+
+            if (!currentTicketId) {
+                alert('Please join a ticket first');
+                return;
+            }
+
+            try {
+                let attachments = [];
+                
+                // Process files
+                for (const file of selectedFiles) {
+                    const fileData = await fileToBase64(file);
+                    attachments.push({
+                        name: file.name,
+                        type: file.type,
+                        data: fileData.split(',')[1] // Remove data:mime;base64, prefix
+                    });
+                }
+
+                socket.emit('send_message', {
+                    ticketId: currentTicketId,
+                    message: messageText,
+                    attachments: attachments
+                });
+
+                // Clear inputs
+                document.getElementById('messageInput').value = '';
+                document.getElementById('fileInput').value = '';
+                selectedFiles = [];
+                displaySelectedFiles();
+
+            } catch (error) {
+                alert('Error preparing message: ' + error.message);
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Typing indicators
+        document.getElementById('messageInput').addEventListener('input', () => {
+            if (currentTicketId && socket) {
+                socket.emit('typing_start', { ticketId: currentTicketId });
+                
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    socket.emit('typing_stop', { ticketId: currentTicketId });
+                }, 1000);
+            }
+        });
+
+        function showTypingIndicator(text) {
+            document.getElementById('typingIndicator').textContent = text;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').textContent = '';
+        }
+
+        // Message display
+        function displayMessages(messages) {
+            const container = document.getElementById('messages');
+            container.innerHTML = '';
+            messages.forEach(message => {
+                appendMessage(message);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendMessage(message) {
+            const container = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            if (currentUser && message.sender._id === currentUser.id) {
+                messageDiv.classList.add('own');
+            }
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-header';
+            headerDiv.textContent = `${message.sender.name} - ${new Date(message.createdAt).toLocaleString()}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = message.message || '[No text message]';
+
+            messageDiv.appendChild(headerDiv);
+            messageDiv.appendChild(contentDiv);
+
+            if (message.attachments && message.attachments.length > 0) {
+                const attachmentsDiv = document.createElement('div');
+                attachmentsDiv.className = 'message-attachments';
+                
+                message.attachments.forEach(att => {
+                    const attachmentLink = document.createElement('a');
+                    attachmentLink.className = 'attachment';
+                    attachmentLink.href = att.assetUrl || att.url || '#';
+                    attachmentLink.target = '_blank';
+                    attachmentLink.textContent = `📎 ${att.originalname} (${formatFileSize(att.size)})`;
+                    attachmentsDiv.appendChild(attachmentLink);
+                });
+                
+                messageDiv.appendChild(attachmentsDiv);
+            }
+
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // UI helpers
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function log(event, data = null) {
+            const logDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>${timestamp}</strong> - ${event}`;
+            if (data) {
+                logEntry.innerHTML += `<br><pre style="margin: 5px 0; padding: 5px; background: #f0f0f0; font-size: 10px;">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        // Handle Enter key in message input
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initialize
+        updateStatus('Ready to connect', 'info');
+        log('Client initialized');
+    </script>
+</body>
+</html>

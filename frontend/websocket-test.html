@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Test</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+        }
+
+        .message.received {
+            background-color: #e9ecef;
+            color: #333;
+        }
+
+        .message.system {
+            background-color: #ffeaa7;
+            color: #856404;
+            font-style: italic;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        input,
+        button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        input {
+            flex: 1;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin: 10px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h1>WebSocket Chat Test</h1>
+
+        <div class="form-group">
+            <label for="backendUrl">Backend URL:</label>
+            <input type="text" id="backendUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+        </div>
+
+        <div class="form-group">
+            <label for="authToken">JWT Token:</label>
+            <input type="text" id="authToken" placeholder="Paste your JWT token here">
+        </div>
+
+        <div class="form-group">
+            <label for="ticketId">Ticket ID:</label>
+            <input type="text" id="ticketId" placeholder="Enter ticket ID">
+        </div>
+
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()" disabled id="disconnectBtn">Disconnect</button>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+
+        <div id="messages" class="messages"></div>
+
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Type a message..." disabled>
+            <button onclick="sendMessage()" disabled id="sendBtn">Send</button>
+        </div>
+
+        <div class="input-group">
+            <input type="file" id="fileInput" multiple disabled>
+            <button onclick="sendFileMessage()" disabled id="sendFileBtn">Send Files</button>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isAuthenticated = false;
+        let currentTicketId = null;
+
+        function addMessage(message, type = 'system') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(status, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = status;
+            statusDiv.className = `status ${className}`;
+        }
+
+        function connect() {
+            const backendUrl = document.getElementById('backendUrl').value;
+            const token = document.getElementById('authToken').value;
+            const ticketId = document.getElementById('ticketId').value;
+
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+
+            if (!ticketId) {
+                alert('Please enter a ticket ID');
+                return;
+            }
+
+            currentTicketId = ticketId;
+            updateStatus('Connecting...', 'connecting');
+            addMessage('Connecting to WebSocket server...');
+
+            socket = io(backendUrl);
+
+            socket.on('connect', () => {
+                addMessage('Connected to WebSocket server');
+                updateStatus('Connected (Not authenticated)', 'connecting');
+
+                // Authenticate
+                addMessage('Authenticating...');
+                socket.emit('authenticate', { token });
+            });
+
+            socket.on('authenticated', (data) => {
+                addMessage(`Authenticated as: ${data.user.name} (${data.user.email})`);
+                updateStatus('Authenticated', 'connected');
+                isAuthenticated = true;
+
+                // Enable controls
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('fileInput').disabled = false;
+                document.getElementById('sendFileBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = false;
+
+                // Join ticket room
+                addMessage(`Joining ticket room: ${currentTicketId}`);
+                socket.emit('join_ticket', { ticketId: currentTicketId });
+            });
+
+            socket.on('authentication_error', (data) => {
+                addMessage(`Authentication failed: ${data.message}`);
+                updateStatus('Authentication failed', 'disconnected');
+            });
+
+            socket.on('joined_ticket', (data) => {
+                addMessage(`Successfully joined ticket: ${data.ticketId}`);
+
+                // Load message history
+                addMessage('Loading message history...');
+                socket.emit('get_messages', { ticketId: currentTicketId });
+            });
+
+            socket.on('join_ticket_error', (data) => {
+                addMessage(`Failed to join ticket: ${data.message}`);
+            });
+
+            socket.on('messages_loaded', (data) => {
+                addMessage(`Loaded ${data.messages.length} messages`);
+                data.messages.forEach(msg => {
+                    const sender = msg.sender?.name || 'Unknown';
+                    const messageText = msg.message || '[File only]';
+                    addMessage(`${sender}: ${messageText}`, 'received');
+                });
+            });
+
+            socket.on('messages_error', (data) => {
+                addMessage(`Failed to load messages: ${data.message}`);
+            });
+
+            socket.on('new_message', (data) => {
+                const message = data.data;
+                const sender = message.sender?.name || 'Unknown';
+                const messageText = message.message || '[File only]';
+                addMessage(`${sender}: ${messageText}`, 'received');
+            });
+
+            socket.on('send_message_error', (data) => {
+                addMessage(`Failed to send message: ${data.message}`);
+            });
+
+            socket.on('user_typing', (data) => {
+                addMessage(`${data.userName} is typing...`);
+            });
+
+            socket.on('user_stopped_typing', (data) => {
+                addMessage(`${data.userName} stopped typing`);
+            });
+
+            socket.on('disconnect', () => {
+                addMessage('Disconnected from server');
+                updateStatus('Disconnected', 'disconnected');
+                resetControls();
+            });
+
+            socket.on('connect_error', (error) => {
+                addMessage(`Connection error: ${error.message}`);
+                updateStatus('Connection failed', 'disconnected');
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                if (currentTicketId) {
+                    socket.emit('leave_ticket', { ticketId: currentTicketId });
+                }
+                socket.disconnect();
+                socket = null;
+            }
+            resetControls();
+        }
+
+        function resetControls() {
+            isAuthenticated = false;
+            currentTicketId = null;
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('fileInput').disabled = true;
+            document.getElementById('sendFileBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || !isAuthenticated || !socket) {
+                return;
+            }
+
+            addMessage(`You: ${message}`, 'sent');
+
+            socket.emit('send_message', {
+                ticketId: currentTicketId,
+                message: message
+            });
+
+            messageInput.value = '';
+        }
+
+        async function sendFileMessage() {
+            const fileInput = document.getElementById('fileInput');
+            const files = Array.from(fileInput.files);
+
+            if (files.length === 0 || !isAuthenticated || !socket) {
+                return;
+            }
+
+            addMessage(`Sending ${files.length} file(s)...`, 'sent');
+
+            try {
+                const attachments = [];
+                for (const file of files) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        addMessage(`File ${file.name} is too large (max 10MB)`);
+                        continue;
+                    }
+
+                    const base64Data = await fileToBase64(file);
+                    attachments.push({
+                        name: file.name,
+                        type: file.type,
+                        data: base64Data.split(',')[1]
+                    });
+                }
+
+                socket.emit('send_message', {
+                    ticketId: currentTicketId,
+                    message: `Sent ${attachments.length} file(s)`,
+                    attachments: attachments
+                });
+
+                fileInput.value = '';
+            } catch (error) {
+                addMessage(`Error preparing files: ${error.message}`);
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Enable sending message with Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Add typing indicators
+        let typingTimer = null;
+        document.getElementById('messageInput').addEventListener('input', function () {
+            if (isAuthenticated && socket && currentTicketId) {
+                socket.emit('typing_start', { ticketId: currentTicketId });
+
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    socket.emit('typing_stop', { ticketId: currentTicketId });
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+
+</html>

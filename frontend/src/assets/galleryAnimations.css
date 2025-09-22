@@ -1,0 +1,168 @@
+/* Gallery Animations for a more polished user experience */
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Zoom In Animation */
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide Down Animation */
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Swipe Left Animation */
+@keyframes swipeLeft {
+  from {
+    transform: translateX(30px);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Swipe Right Animation */
+@keyframes swipeRight {
+  from {
+    transform: translateX(-30px);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Touch Hint Animation */
+@keyframes touchHintShow {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Applying Animations */
+.gallery-overlay {
+  animation: fadeIn 0.25s ease-out;
+}
+
+.gallery-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.gallery-zoom-in {
+  animation: zoomIn 0.3s ease-out;
+}
+
+.gallery-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.gallery-slide-down {
+  animation: slideDown 0.4s ease-out;
+}
+
+.gallery-pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.gallery-swipe-left {
+  animation: swipeLeft 0.3s ease-out;
+}
+
+.gallery-swipe-right {
+  animation: swipeRight 0.3s ease-out;
+}
+
+/* Show Touch Hint - will be triggered via JavaScript on first gallery open */
+.gallery-touch-hint.show {
+  opacity: 1;
+  pointer-events: auto;
+  animation: touchHintShow 3s forwards;
+}
+
+/* Transition Classes */
+.gallery-transition {
+  transition: all 0.3s ease;
+}
+
+/* Animation for active thumbnail */
+.gallery-thumbnail-active {
+  box-shadow: 0 0 0 2px white, 0 0 10px rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+/* Image Container Hover Effect */
+.gallery-image-container {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Gallery Modal Base Styles */
+.gallery-modal {
+  position: fixed;
+  inset: 0; /* top, right, bottom, left = 0 */
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
